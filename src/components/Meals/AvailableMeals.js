@@ -1,50 +1,66 @@
-import Card from "../UI/Card";
-import MealItem from "./MealItem/MealItem";
-
+import { useEffect, useState } from "react";
 import classes from "./AvailableMeals.module.css";
 
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Sushi",
-    description: "Finest fish and veggies",
-    price: 22.99,
-  },
-  {
-    id: "m2",
-    name: "Schnitzel",
-    description: "A german specialty!",
-    price: 16.5,
-  },
-  {
-    id: "m3",
-    name: "Barbecue Burger",
-    description: "American, raw, meaty",
-    price: 12.99,
-  },
-  {
-    id: "m4",
-    name: "Green Bowl",
-    description: "Healthy...and green...",
-    price: 18.99,
-  },
-];
+import Card from "../UI/Card";
+import MealItem from "./MealItem/MealItem";
+import useHttp from "../../hooks/use-http";
 
 const AvailableMeals = () => {
-  const mealsList = DUMMY_MEALS.map((meal) => (
-    <MealItem
-      id={meal.id}
-      key={meal.id}
-      name={meal.name}
-      description={meal.description}
-      price={meal.price}
-    />
-  ));
+  const [meals, setMeals] = useState([]);
+
+  const { isLoading, error, sendRequest: fetchMeals } = useHttp();
+
+  useEffect(() => {
+    const transformMeals = (mealsObject) => {
+      const loadedMeals = [];
+
+      for (const key in mealsObject) {
+        loadedMeals.push({
+          id: key,
+          name: mealsObject[key].name,
+          description: mealsObject[key].description,
+          price: mealsObject[key].price,
+        });
+      }
+      setMeals(loadedMeals);
+    };
+
+    fetchMeals(
+      {
+        url: "https://reactmeals-23e37-default-rtdb.europe-west1.firebasedatabase.app/meals.json",
+      },
+      transformMeals
+    );
+  }, [fetchMeals]);
+
+  let mealsList = <h2>No meals found. </h2>;
+
+  if (meals.length > 0) {
+    mealsList = meals.map((meal) => (
+      <MealItem
+        id={meal.id}
+        key={meal.id}
+        name={meal.name}
+        description={meal.description}
+        price={meal.price}
+      />
+    ));
+  }
+
+  let content = mealsList;
+
+  if (error) {
+    content = "Reload the page, please.";
+  }
+
+  if (isLoading) {
+    content = "Loading meals...";
+  }
 
   return (
     <section className={classes.meals}>
       <Card>
-        <ul>{mealsList}</ul>
+        <ul>{content}</ul>
       </Card>
     </section>
   );
